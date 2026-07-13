@@ -13,7 +13,7 @@
     </div>
 
     <div v-else-if="entries.length === 0" class="empty-state">
-      <div class="empty-icon">🍺</div>
+      <UiAppLogo tag="div" size="md" :show-text="false" class="empty-icon" />
       <p>Нет записей за выбранную дату</p>
       <p class="empty-hint">Добавьте первую запись, используя форму выше</p>
     </div>
@@ -182,8 +182,12 @@ const formatTime = (dateString: string) => {
 }
 
 .empty-icon {
-  font-size: 4rem;
   margin-bottom: var(--spacing-md);
+}
+
+.empty-icon :deep(.app-logo__image) {
+  width: 64px;
+  height: 64px;
 }
 
 .empty-state p {

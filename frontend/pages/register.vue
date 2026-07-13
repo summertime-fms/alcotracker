@@ -1,6 +1,7 @@
 <template>
   <div class="auth-page">
     <div class="auth-container">
+      <AuthBrand />
       <AuthRegisterForm />
     </div>
   </div>

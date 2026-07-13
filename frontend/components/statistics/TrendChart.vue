@@ -1,6 +1,12 @@
 <template>
-  <div class="chart-container">
-    <canvas ref="chartCanvas"></canvas>
+  <div class="trend-chart">
+    <div class="chart-container">
+      <canvas ref="chartCanvas"></canvas>
+    </div>
+    <p class="chart-legend-hint">
+      <strong>Скользящее среднее</strong> — усреднение за 7 дней, сглаживает скачки и показывает типичный уровень.
+      <strong>Линия тренда</strong> — общее направление за период: растёт, снижается или стабильно.
+    </p>
   </div>
 </template>
 
@@ -280,10 +286,32 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.trend-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
 .chart-container {
   position: relative;
   height: 450px;
   width: 100%;
+}
+
+.chart-legend-hint {
+  margin: 0;
+  padding: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  background: var(--color-accent-light);
+  border: 1px solid rgba(99, 102, 241, 0.12);
+  border-radius: var(--radius-md);
+}
+
+.chart-legend-hint strong {
+  color: var(--color-text-light);
+  font-weight: var(--font-weight-semibold);
 }
 
 @media (max-width: 767px) {

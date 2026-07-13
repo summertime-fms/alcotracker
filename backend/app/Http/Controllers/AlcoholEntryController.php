@@ -160,13 +160,15 @@ class AlcoholEntryController extends Controller
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'group_by' => ['nullable', 'string'],
+            'alcohol_type' => ['nullable', 'string', 'in:' . implode(',', AlcoholType::values())],
         ]);
 
         $statistics = $this->alcoholEntryService->getDetailedStatistics(
             $request->user()->id,
             $request->input('start_date'),
             $request->input('end_date'),
-            $request->input('group_by', 'amount')
+            $request->input('group_by', 'amount'),
+            $request->input('alcohol_type')
         );
 
         return response()->json($statistics);

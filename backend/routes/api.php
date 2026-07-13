@@ -3,6 +3,7 @@
 use App\Http\Controllers\AlcoholEntryController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\DetoxController;
 use Illuminate\Support\Facades\Route;
 
 // Публичные маршруты аутентификации
@@ -33,6 +34,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [AlcoholEntryController::class, 'update']);
         Route::patch('/{id}', [AlcoholEntryController::class, 'update']);
         Route::delete('/{id}', [AlcoholEntryController::class, 'destroy']);
+    });
+
+    Route::prefix('detox')->group(function () {
+        Route::get('/insights', [DetoxController::class, 'insights']);
     });
 });
 

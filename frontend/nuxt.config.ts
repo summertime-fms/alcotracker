@@ -3,6 +3,18 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
 
+  css: ['~/assets/css/main.css'],
+
+  features: {
+    inlineStyles: true,
+  },
+
+  vite: {
+    build: {
+      cssCodeSplit: false,
+    },
+  },
+
   app: {
     head: {
       title: 'AlcoTracker — учёт потребления алкоголя и аналитика',
@@ -14,8 +26,25 @@ export default defineNuxtConfig({
           name: 'description',
           content: 'AlcoTracker помогает отслеживать количество выпитого алкоголя, вести дневник записей и анализировать привычки: графики, тренды, расчёт чистого спирта и статистика по дням недели.',
         },
+        {
+          name: 'theme-color',
+          content: '#6366F1',
+        },
       ],
       link: [
+        {
+          rel: 'icon',
+          type: 'image/svg+xml',
+          href: '/favicon.svg',
+        },
+        {
+          rel: 'apple-touch-icon',
+          href: '/icons/apple-touch-icon.svg',
+        },
+        {
+          rel: 'manifest',
+          href: '/site.webmanifest',
+        },
         {
           rel: 'preconnect',
           href: 'https://fonts.googleapis.com'

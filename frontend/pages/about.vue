@@ -3,10 +3,7 @@
     <div class="container">
       <header class="header">
         <div class="header-content">
-          <div class="header-title">
-            <h1>🍺 AlcoTracker</h1>
-            <p class="header-subtitle">Учет потребления алкоголя</p>
-          </div>
+          <UiAppBrand logo-tag="h1" size="lg" class="header-title" />
           <UiButton @click="handleLogout" variant="outline" size="sm" :loading="isLoading">
             Выйти
           </UiButton>
@@ -19,9 +16,9 @@
         <div class="about-hero card">
           <h2>О проекте</h2>
           <p class="about-lead">
-            AlcoTracker — это личный дневник потребления алкоголя с наглядной аналитикой.
-            Сервис помогает осознанно относиться к своим привычкам: фиксировать каждую запись,
-            видеть общую картину и замечать закономерности.
+            AlcoTracker — личный дневник потребления алкоголя с наглядной аналитикой
+            и инструментами для осознанного контроля привычек. Фиксируйте записи,
+            изучайте динамику и отслеживайте периоды трезвости.
           </p>
         </div>
 
@@ -29,10 +26,10 @@
           <section class="about-section">
             <h3>Зачем это нужно</h3>
             <p>
-              Многие люди не замечают, сколько алкоголя они выпивают за неделю или месяц.
-              Без регулярного учёта легко недооценить частоту и объём. AlcoTracker даёт
-              простой инструмент для ежедневного контроля — без лишней сложности и с фокусом
-              на ваших данных.
+              Без регулярного учёта легко недооценить, сколько и как часто вы пьёте.
+              500 мл водки и 2000 мл пива — разный объём жидкости, но совсем разное
+              влияние на организм. AlcoTracker помогает видеть полную картину: не только
+              литры, но и расчёт чистого спирта, тренды и паттерны по дням недели.
             </p>
           </section>
 
@@ -40,26 +37,34 @@
             <h3>Основной функционал</h3>
             <ul class="feature-list">
               <li>
-                <strong>Дневник записей</strong> — добавляйте напитки с указанием типа,
-                объёма в миллилитрах и даты. Просматривайте историю за любой день.
+                <strong>Дневник записей</strong> — добавляйте напитки с типом, объёмом
+                в миллилитрах и датой. Просматривайте и редактируйте историю за любой день.
               </li>
               <li>
-                <strong>Краткая статистика</strong> — на главной странице отображается
-                сводка за неделю: общий объём, количество записей и разбивка по типам напитков.
+                <strong>Краткая статистика</strong> — на главной странице сводка за неделю:
+                общий объём, количество записей и разбивка по типам напитков.
               </li>
               <li>
-                <strong>Подробная аналитика</strong> — графики динамики потребления, тренды,
-                распределение по видам напитков и расчёт чистого спирта с учётом крепости.
+                <strong>Подробная аналитика</strong> — графики динамики потребления и тренда,
+                фильтр по конкретному напитку, расчёт чистого спирта с учётом крепости,
+                анализ по дням недели. Периоды: неделя, месяц, полгода, год и другие.
               </li>
               <li>
-                <strong>Анализ по дням недели</strong> — выявляйте, в какие дни вы пьёте
-                чаще всего, и отслеживайте серии дней с употреблением и без него.
-              </li>
-              <li>
-                <strong>Гибкие периоды</strong> — статистика доступна за неделю, месяц,
-                полгода, год и другие интервалы.
+                <strong>Здоровье и Детокс</strong> — текущий стрик трезвости, личный рекорд,
+                годовой календарь-теплокарта с цветовой индикацией: дни употребления,
+                метаболизма и восстановления.
               </li>
             </ul>
+          </section>
+
+          <section class="about-section">
+            <h3>Как считается чистый спирт</h3>
+            <p>
+              Для каждого типа напитка задана средняя крепость (ABV). Например:
+              500 мл водки (40%) = 200 мл чистого спирта, а 500 мл пива (5%) = 25 мл.
+              Это позволяет сравнивать разные напитки по реальному воздействию, а не
+              только по объёму жидкости.
+            </p>
           </section>
 
           <section class="about-section">
@@ -67,8 +72,9 @@
             <p>
               После регистрации вы получаете личный кабинет с защищённым доступом.
               Каждая запись сохраняется в вашем профиле. На странице «Статистика»
-              данные агрегируются и визуализируются в виде графиков и показателей —
-              от среднего потребления в день до максимальных серий «трезвых» дней.
+              данные агрегируются в графики и показатели — от среднего потребления
+              в день до максимальных серий трезвых дней. В разделе «Детокс» — наглядный
+              календарь за год и счётчики мотивации.
             </p>
             <p>
               AlcoTracker не ставит диагнозов и не заменяет медицинскую консультацию.
@@ -78,6 +84,8 @@
           </section>
         </article>
       </main>
+
+      <UiFooter />
     </div>
   </div>
 </template>
@@ -89,7 +97,7 @@ definePageMeta({
 
 useSeoMeta({
   title: 'О проекте — AlcoTracker',
-  description: 'Узнайте, как AlcoTracker помогает вести учёт алкоголя, анализировать привычки и отслеживать динамику потребления с помощью графиков и статистики.',
+  description: 'AlcoTracker — дневник учёта алкоголя с аналитикой, расчётом чистого спирта, статистикой по дням недели и разделом «Здоровье и Детокс».',
 })
 
 const { logout, isLoading } = useAuth()
@@ -100,49 +108,7 @@ const handleLogout = async () => {
 </script>
 
 <style scoped>
-.page {
-  min-height: 100vh;
-  padding: var(--spacing-xl) 0;
-  width: 100%;
-  overflow-x: hidden;
-}
-
-.header {
-  margin-bottom: var(--spacing-2xl);
-  padding: var(--spacing-xl);
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-sm);
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.header-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.header-title h1 {
-  margin: 0;
-  font-family: var(--font-family-display);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text);
-  font-size: var(--font-size-2xl);
-  letter-spacing: -0.02em;
-}
-
-.header-subtitle {
-  margin: var(--spacing-xs) 0 0 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-normal);
-}
-
 .main-content {
-  animation: fadeIn 0.5s ease-out;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-2xl);
@@ -232,25 +198,6 @@ const handleLogout = async () => {
 }
 
 @media (max-width: 767px) {
-  .page {
-    padding: var(--spacing-md) 0;
-  }
-
-  .header {
-    margin-bottom: var(--spacing-lg);
-    padding: var(--spacing-md);
-  }
-
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-md);
-  }
-
-  .header-title h1 {
-    font-size: var(--font-size-xl);
-  }
-
   .about-hero,
   .about-content {
     padding: var(--spacing-lg);
@@ -262,17 +209,6 @@ const handleLogout = async () => {
 
   .about-lead {
     font-size: var(--font-size-base);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 </style>

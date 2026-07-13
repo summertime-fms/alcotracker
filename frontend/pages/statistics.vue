@@ -3,10 +3,7 @@
     <div class="container">
       <header class="header">
         <div class="header-content">
-          <div class="header-title">
-            <h1>🍺 AlcoTracker</h1>
-            <p class="header-subtitle">Учет потребления алкоголя</p>
-          </div>
+          <UiAppBrand logo-tag="h1" size="lg" class="header-title" />
           <UiButton @click="handleLogout" variant="outline" size="sm" :loading="authLoading">
             Выйти
           </UiButton>
@@ -95,6 +92,9 @@
             <div class="chart-header">
               <h3>Потребление по количеству выпитого</h3>
               <div class="chart-info">
+                <span v-if="selectedDrinkLabel" class="info-badge">
+                  Напиток: <strong>{{ selectedDrinkLabel }}</strong>
+                </span>
                 <span class="info-badge">
                   Всего: <strong>{{ amountStatistics?.total_ml || 0 }} мл</strong>
                 </span>
@@ -104,42 +104,37 @@
               </div>
             </div>
 
-            <StatisticsChart
-              v-if="hasAmountData"
-              :data="amountStatistics?.data || {}"
-              label="Количество (мл)"
-              group-by="amount"
-            />
-
-            <div v-else class="empty-state">
-              <div class="empty-icon">📊</div>
-              <p>Нет данных за выбранный период</p>
+            <div class="chart-filters">
+              <UiSelect
+                v-model="amountDrinkFilter"
+                :options="drinkFilterOptions"
+                label="Напиток"
+                @change="handleAmountDrinkFilterChange"
+              />
+              <p v-if="amountDrinkFilter === 'all'" class="chart-hint">
+                Общий объём жидкости без учёта крепости. 2000 мл пива и 500 мл водки на графике
+                выглядят сопоставимо, хотя влияние на организм разное. Для оценки «вреда» смотрите
+                раздел «Чистый спирт» ниже.
+              </p>
             </div>
-          </div>
 
-          <!-- Дашборд по типам напитков -->
-          <div class="chart-card">
-            <div class="chart-header">
-              <h3>Потребление по типам напитков</h3>
-              <div class="chart-info">
-                <span class="info-badge">
-                  Всего: <strong>{{ drinkStatistics?.total_ml || 0 }} мл</strong>
-                </span>
-                <span class="info-badge">
-                  Период: {{ formatPeriod() }}
-                </span>
+            <div class="amount-chart-body" :class="{ 'amount-chart-body--loading': isAmountLoading }">
+              <StatisticsChart
+                v-if="hasAmountData && !isAmountLoading"
+                :data="amountStatistics?.data || {}"
+                :label="amountChartLabel"
+                group-by="amount"
+              />
+
+              <div v-else-if="isAmountLoading" class="empty-state">
+                <div class="spinner"></div>
+                <p>Обновление графика...</p>
               </div>
-            </div>
 
-            <DrinkChart
-              v-if="hasDrinkData"
-              :data="drinkStatistics.data"
-              label="Количество (мл)"
-            />
-
-            <div v-else class="empty-state">
-              <div class="empty-icon">🍺</div>
-              <p>Нет данных за выбранный период</p>
+              <div v-else class="empty-state">
+                <div class="empty-icon">📊</div>
+                <p>{{ amountEmptyStateMessage }}</p>
+              </div>
             </div>
           </div>
 
@@ -252,22 +247,33 @@
                 </div>
               </div>
               <div class="insight-item">
-                <span class="insight-icon">📊</span>
+                <span class="insight-icon">🥃</span>
                 <div class="insight-content">
-                  <div class="insight-label">Паттерн:</div>
-                  <div class="insight-value">{{ getWeekdayPattern() }}</div>
+                  <div class="insight-label">Средняя доза за день:</div>
+                  <div class="insight-value">
+                    {{ weekdayStatistics?.average_dose_ml || 0 }} мл чистого спирта
+                  </div>
+                  <div class="insight-hint">
+                    В дни с записями ({{ weekdayStatistics?.days_with_entries || 0 }})
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          <StatisticsHabitPatternAnalysis
+            v-if="weekdayStatistics?.pattern_analysis"
+            :pattern="weekdayStatistics.pattern_analysis"
+          />
         </div>
       </main>
+
+      <UiFooter />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import DrinkChart from '~/components/statistics/DrinkChart.vue'
 import TrendChart from '~/components/statistics/TrendChart.vue'
 import WeekdayChart from '~/components/statistics/WeekdayChart.vue'
 
@@ -276,13 +282,15 @@ definePageMeta({
 })
 
 const { user, logout, isLoading: authLoading } = useAuth()
-const { getDetailedStatistics, getPureAlcoholStatistics, getWeekdayStatistics } = useAlcoholEntries()
+const { getDetailedStatistics, getPureAlcoholStatistics, getWeekdayStatistics, getAlcoholTypes, alcoholTypes } = useAlcoholEntries()
 
 const isLoading = ref(false)
+const isAmountLoading = ref(false)
 const amountStatistics = ref<any>(null)
-const drinkStatistics = ref<any>(null)
 const pureAlcoholStatistics = ref<any>(null)
 const weekdayStatistics = ref<any>(null)
+const amountDrinkFilter = ref('beer')
+const isAmountFilterAuto = ref(true)
 
 const today = computed(() => {
   const date = new Date()
@@ -303,6 +311,32 @@ const periodOptions = [
   { value: 'last_year', label: 'За год' },
   { value: 'year_to_date', label: 'С начала года' },
 ]
+
+const DEFAULT_DRINK_TYPE = 'beer'
+
+const drinkFilterOptions = computed(() => [
+  { value: 'all', label: 'Все напитки (общий объём)' },
+  ...Object.entries(alcoholTypes.value).map(([value, label]) => ({ value, label })),
+])
+
+const selectedDrinkLabel = computed(() => {
+  if (amountDrinkFilter.value === 'all') return ''
+  return alcoholTypes.value[amountDrinkFilter.value] || ''
+})
+
+const amountChartLabel = computed(() => {
+  if (amountDrinkFilter.value === 'all') {
+    return 'Общий объём (мл)'
+  }
+  return `${selectedDrinkLabel.value} (мл)`
+})
+
+const amountEmptyStateMessage = computed(() => {
+  if (amountDrinkFilter.value !== 'all' && selectedDrinkLabel.value) {
+    return `Нет записей по напитку «${selectedDrinkLabel.value}» за выбранный период`
+  }
+  return 'Нет данных за выбранный период'
+})
 
 const handleLogout = async () => {
   await logout()
@@ -350,7 +384,56 @@ const handlePeriodChange = (value?: string | number) => {
       break
   }
 
+  isAmountFilterAuto.value = true
   loadStatistics()
+}
+
+const getDefaultDrinkFilter = (entriesByType?: Record<string, number>) => {
+  const entries = Object.entries(entriesByType || {})
+  if (entries.length === 0) {
+    return DEFAULT_DRINK_TYPE
+  }
+
+  return entries.reduce((mostPopular, current) => {
+    return current[1] > mostPopular[1] ? current : mostPopular
+  })[0]
+}
+
+const resolveAmountDrinkFilter = (entriesByType?: Record<string, number>) => {
+  if (isAmountFilterAuto.value) {
+    amountDrinkFilter.value = getDefaultDrinkFilter(entriesByType)
+  }
+}
+
+const loadAmountStatistics = async (entriesByType?: Record<string, number>) => {
+  resolveAmountDrinkFilter(entriesByType)
+
+  const alcoholType = amountDrinkFilter.value === 'all'
+    ? undefined
+    : amountDrinkFilter.value
+
+  const amountData = await getDetailedStatistics(
+    filters.startDate || undefined,
+    filters.endDate || undefined,
+    'amount',
+    alcoholType
+  )
+
+  amountStatistics.value = amountData
+  return amountData
+}
+
+const handleAmountDrinkFilterChange = async () => {
+  isAmountFilterAuto.value = false
+
+  try {
+    isAmountLoading.value = true
+    await loadAmountStatistics(amountStatistics.value?.entries_by_type)
+  } catch (error) {
+    console.error('Ошибка загрузки статистики по напитку:', error)
+  } finally {
+    isAmountLoading.value = false
+  }
 }
 
 const formatSelectedPeriod = () => {
@@ -365,17 +448,11 @@ const formatSelectedPeriod = () => {
 const loadStatistics = async () => {
   try {
     isLoading.value = true
-    // Загружаем данные для всех дашбордов параллельно
-    const [amountData, drinkData, pureAlcoholData, weekdayData] = await Promise.all([
+    const [amountMeta, pureAlcoholData, weekdayData] = await Promise.all([
       getDetailedStatistics(
         filters.startDate || undefined,
         filters.endDate || undefined,
         'amount'
-      ),
-      getDetailedStatistics(
-        filters.startDate || undefined,
-        filters.endDate || undefined,
-        'drink'
       ),
       getPureAlcoholStatistics(
         filters.startDate || undefined,
@@ -388,10 +465,28 @@ const loadStatistics = async () => {
         'pure_alcohol'
       )
     ])
-    amountStatistics.value = amountData
-    drinkStatistics.value = drinkData
+
     pureAlcoholStatistics.value = pureAlcoholData
     weekdayStatistics.value = weekdayData
+
+    if (isAmountFilterAuto.value) {
+      amountDrinkFilter.value = getDefaultDrinkFilter(amountMeta.entries_by_type)
+    }
+
+    const alcoholType = amountDrinkFilter.value === 'all'
+      ? undefined
+      : amountDrinkFilter.value
+
+    if (alcoholType) {
+      amountStatistics.value = await getDetailedStatistics(
+        filters.startDate || undefined,
+        filters.endDate || undefined,
+        'amount',
+        alcoholType
+      )
+    } else {
+      amountStatistics.value = amountMeta
+    }
   } catch (error) {
     console.error('Ошибка загрузки статистики:', error)
   } finally {
@@ -400,7 +495,7 @@ const loadStatistics = async () => {
 }
 
 const formatPeriod = () => {
-  const stats = amountStatistics.value || drinkStatistics.value
+  const stats = amountStatistics.value
   if (!stats) return ''
   const start = new Date(stats.period.start_date)
   const end = new Date(stats.period.end_date)
@@ -408,11 +503,9 @@ const formatPeriod = () => {
 }
 
 const hasAmountData = computed(() => {
-  return amountStatistics.value?.data && Object.keys(amountStatistics.value.data).length > 0
-})
-
-const hasDrinkData = computed(() => {
-  return drinkStatistics.value?.data && Array.isArray(drinkStatistics.value.data) && drinkStatistics.value.data.length > 0
+  if (!amountStatistics.value?.data) return false
+  const values = Object.values(amountStatistics.value.data)
+  return values.some(value => Number(value) > 0)
 })
 
 const hasPureAlcoholData = computed(() => {
@@ -555,75 +648,13 @@ const getLeastActiveWeekday = () => {
   return `${minDay.key} (${Math.round(minDay.value)} мл)`
 }
 
-const getWeekdayPattern = () => {
-  if (!weekdayStatistics.value?.data) return '-'
-  const data = weekdayStatistics.value.data
-
-  // Суммируем будни (Пн-Пт) и выходные (Сб-Вс)
-  const weekdaySum = data.slice(0, 5).reduce((sum: number, day: any) => sum + day.value, 0)
-  const weekendSum = data.slice(5, 7).reduce((sum: number, day: any) => sum + day.value, 0)
-
-  const total = weekdaySum + weekendSum
-  if (total === 0) return 'Нет данных'
-
-  const weekendPercentage = (weekendSum / total * 100).toFixed(0)
-
-  if (weekendSum > weekdaySum * 1.5) {
-    return `Выходные (${weekendPercentage}% в Сб-Вс)`
-  } else if (weekdaySum > weekendSum * 1.5) {
-    return 'Будние дни'
-  } else {
-    return 'Равномерное'
-  }
-}
-
-onMounted(() => {
-  handlePeriodChange() // Устанавливает даты по умолчанию и загружает статистику
+onMounted(async () => {
+  await getAlcoholTypes()
+  handlePeriodChange()
 })
 </script>
 
 <style scoped>
-.page {
-  min-height: 100vh;
-  padding: var(--spacing-xl) 0;
-}
-
-.header {
-  margin-bottom: var(--spacing-2xl);
-  padding: var(--spacing-xl);
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-sm);
-}
-
-.header-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.header-title h1 {
-  margin: 0;
-  font-family: var(--font-family-display);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text);
-  font-size: var(--font-size-2xl);
-  letter-spacing: -0.02em;
-}
-
-.header-subtitle {
-  margin: var(--spacing-xs) 0 0 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-normal);
-}
-
-.main-content {
-  animation: fadeIn 0.5s ease-out;
-}
-
 .stats-header-card {
   margin-bottom: var(--spacing-2xl);
   padding: var(--spacing-2xl);
@@ -786,12 +817,37 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
+.chart-filters {
+  margin-bottom: var(--spacing-xl);
+  max-width: 420px;
+}
+
+.chart-hint {
+  margin: var(--spacing-sm) 0 0 0;
+  padding: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  background: var(--color-accent-light);
+  border: 1px solid rgba(99, 102, 241, 0.12);
+  border-radius: var(--radius-md);
+}
+
+.amount-chart-body--loading {
+  opacity: 0.6;
+}
+
 .info-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-accent-light);
   border-radius: var(--radius-full);
   font-size: var(--font-size-sm);
+  line-height: 1.35;
   color: var(--color-text-light);
+  text-align: center;
 }
 
 .info-badge strong {
@@ -816,17 +872,6 @@ onMounted(() => {
 
 .empty-hint {
   font-size: var(--font-size-sm);
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .section-divider {
@@ -939,26 +984,13 @@ onMounted(() => {
   font-weight: var(--font-weight-semibold);
 }
 
+.insight-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  line-height: var(--line-height-normal);
+}
+
 @media (max-width: 767px) {
-  .page {
-    padding: var(--spacing-md) 0;
-  }
-
-  .header {
-    margin-bottom: var(--spacing-lg);
-    padding: var(--spacing-md);
-  }
-
-  .header-title h1 {
-    font-size: var(--font-size-xl);
-  }
-
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-md);
-  }
-
   .stats-header-card {
     margin-bottom: var(--spacing-lg);
     padding: var(--spacing-lg);
@@ -991,11 +1023,16 @@ onMounted(() => {
 
   .chart-info {
     width: 100%;
+    align-items: stretch;
+  }
+
+  .chart-filters {
+    max-width: none;
   }
 
   .info-badge {
     flex: 1;
-    text-align: center;
+    min-width: 0;
   }
 
   .section-divider {

@@ -127,8 +127,13 @@ class AlcoholEntryService
      * @param string $groupBy - 'drink' (по типам напитков) или 'amount' (общее количество)
      * @return array
      */
-    public function getDetailedStatistics(int $userId, ?string $startDate = null, ?string $endDate = null, string $groupBy = 'amount'): array
-    {
+    public function getDetailedStatistics(
+        int $userId,
+        ?string $startDate = null,
+        ?string $endDate = null,
+        string $groupBy = 'amount',
+        ?string $alcoholType = null
+    ): array {
         // По умолчанию статистика за текущий месяц
         $startDate = $startDate ?? Carbon::now()->startOfMonth()->format('Y-m-d');
         $endDate = $endDate ?? Carbon::now()->endOfMonth()->format('Y-m-d');
@@ -137,6 +142,17 @@ class AlcoholEntryService
             ->whereDate('drink_date', '>=', $startDate)
             ->whereDate('drink_date', '<=', $endDate)
             ->get();
+
+        $entriesByType = $entries
+            ->groupBy(fn ($entry) => $entry->alcohol_type->value)
+            ->map(fn ($group) => $group->count())
+            ->toArray();
+
+        if ($alcoholType !== null) {
+            $entries = $entries->filter(
+                fn ($entry) => $entry->alcohol_type->value === $alcoholType
+            );
+        }
 
         // Если группируем по типам напитков
         if ($groupBy === 'drink') {
@@ -169,8 +185,10 @@ class AlcoholEntryService
                     'end_date' => $endDate,
                 ],
                 'group_by' => $groupBy,
+                'alcohol_type' => $alcoholType,
                 'data' => $data,
                 'total_ml' => $totalMl,
+                'entries_by_type' => $entriesByType,
             ];
         }
 
@@ -198,8 +216,10 @@ class AlcoholEntryService
                 'end_date' => $endDate,
             ],
             'group_by' => $groupBy,
+            'alcohol_type' => $alcoholType,
             'data' => $allDays,
             'total_ml' => array_sum($allDays),
+            'entries_by_type' => $entriesByType,
         ];
     }
 
@@ -351,6 +371,10 @@ class AlcoholEntryService
 
         $totalValue = array_sum(array_column($data, 'value'));
 
+        $dailyTotals = $this->buildDailyConsumptionTotals($entries, $metric);
+        $averageDose = $this->calculateAverageDosePerDrinkingDay($dailyTotals);
+        $patternAnalysis = $this->buildPatternAnalysis($data, $totalValue, $dailyTotals);
+
         return [
             'period' => [
                 'start_date' => $startDate,
@@ -359,6 +383,156 @@ class AlcoholEntryService
             'metric' => $metric,
             'data' => $data,
             'total' => round($totalValue, 2),
+            'average_dose_ml' => $averageDose['value'],
+            'days_with_entries' => $averageDose['days_count'],
+            'pattern_analysis' => $patternAnalysis,
+        ];
+    }
+
+    /**
+     * Суммарное потребление по календарным дням (только дни с записями).
+     */
+    private function buildDailyConsumptionTotals($entries, string $metric): array
+    {
+        $byDate = $entries->groupBy(fn ($entry) => $entry->drink_date->format('Y-m-d'));
+
+        $dailyTotals = [];
+        foreach ($byDate as $date => $dayEntries) {
+            $value = $metric === 'pure_alcohol'
+                ? $dayEntries->sum(fn ($entry) => $entry->pure_alcohol_ml)
+                : $dayEntries->sum('amount_ml');
+
+            if ($value > 0) {
+                $dailyTotals[$date] = round($value, 2);
+            }
+        }
+
+        return $dailyTotals;
+    }
+
+    /**
+     * Средняя доза за день с записями.
+     */
+    private function calculateAverageDosePerDrinkingDay(array $dailyTotals): array
+    {
+        $daysCount = count($dailyTotals);
+
+        if ($daysCount === 0) {
+            return ['value' => 0, 'days_count' => 0];
+        }
+
+        return [
+            'value' => round(array_sum($dailyTotals) / $daysCount, 1),
+            'days_count' => $daysCount,
+        ];
+    }
+
+    /**
+     * Анализ паттерна потребления: будни (Пн–Чт) vs выходные (Пт–Вс).
+     */
+    private function buildPatternAnalysis(array $weekdayData, float $totalValue, array $dailyTotals): ?array
+    {
+        if ($totalValue <= 0) {
+            return null;
+        }
+
+        // Порядок data: Пн, Вт, Ср, Чт, Пт, Сб, Вс
+        $weekdaysSum = array_sum(array_column(array_slice($weekdayData, 0, 4), 'value'));
+        $weekendsSum = array_sum(array_column(array_slice($weekdayData, 4, 3), 'value'));
+
+        $weekdaysPercent = (int) round($weekdaysSum / $totalValue * 100);
+        $weekendsPercent = 100 - $weekdaysPercent;
+
+        if ($weekendsPercent > 70) {
+            $type = 'weekend_warrior';
+            $label = 'Преимущественно выходные';
+            $insightText = sprintf(
+                'Вы практически не пьёте в будни (Пн–Чт), но %d%% чистого спирта приходится на пятницу, субботу и воскресенье. Берегите печень в субботу!',
+                $weekendsPercent
+            );
+        } elseif ($weekdaysPercent > 60) {
+            $type = 'weekday_sipper';
+            $label = 'Преимущественно будни';
+            $insightText = sprintf(
+                'Вы потребляете %d%% алкоголя в рабочие дни (Пн–Чт). Возможно, это ваш способ снять стресс после работы. Попробуйте заменить его вечерней прогулкой.',
+                $weekdaysPercent
+            );
+        } else {
+            $type = 'steady_drinker';
+            $label = 'Равномерное распределение';
+            $insightText = 'Потребление распределено относительно равномерно между буднями и выходными. Нет выраженных пиков, но стоит следить за общим количеством «сухих» дней.';
+        }
+
+        $anomaly = $this->detectConsumptionAnomaly($dailyTotals, $type, $label);
+
+        return [
+            'type' => $type,
+            'label' => $label,
+            'weekdays_percent' => $weekdaysPercent,
+            'weekends_percent' => $weekendsPercent,
+            'insight_text' => $insightText,
+            'anomaly' => $anomaly,
+        ];
+    }
+
+    /**
+     * Пиковый день, выбивающийся из доминирующего паттерна.
+     */
+    private function detectConsumptionAnomaly(array $dailyTotals, string $patternType, string $patternLabel): ?array
+    {
+        if (count($dailyTotals) < 2) {
+            return null;
+        }
+
+        arsort($dailyTotals);
+        $dates = array_keys($dailyTotals);
+        $values = array_values($dailyTotals);
+
+        $maxDate = $dates[0];
+        $maxValue = $values[0];
+        $secondMax = $values[1];
+        $averageDose = array_sum($values) / count($values);
+
+        $maxDayOfWeek = Carbon::parse($maxDate)->dayOfWeek;
+        $isWeekdayPeak = in_array($maxDayOfWeek, [1, 2, 3, 4], true);
+        $isWeekendPeak = in_array($maxDayOfWeek, [5, 6, 0], true);
+
+        $isSignificantPeak = $maxValue >= $averageDose * 1.75 && $maxValue > $secondMax * 1.25;
+        if (!$isSignificantPeak) {
+            return null;
+        }
+
+        $isPatternMismatch = ($patternType === 'weekend_warrior' && $isWeekdayPeak)
+            || ($patternType === 'weekday_sipper' && $isWeekendPeak);
+
+        if (!$isPatternMismatch && $maxValue < $averageDose * 2) {
+            return null;
+        }
+
+        $weekdayNames = [
+            1 => 'Понедельник',
+            2 => 'Вторник',
+            3 => 'Среда',
+            4 => 'Четверг',
+            5 => 'Пятница',
+            6 => 'Суббота',
+            0 => 'Воскресенье',
+        ];
+
+        $formattedDate = Carbon::parse($maxDate)->locale('ru')->translatedFormat('j F');
+
+        return [
+            'date' => $maxDate,
+            'day_name' => $weekdayNames[$maxDayOfWeek],
+            'formatted_date' => $formattedDate,
+            'value_ml' => round($maxValue, 1),
+            'text' => sprintf(
+                '%s, %s, стала самым тяжёлым днём выбранного периода (%s мл спирта), что выбивается из вашего обычного паттерна «%s».',
+                $weekdayNames[$maxDayOfWeek],
+                $formattedDate,
+                round($maxValue),
+                $patternLabel
+            ),
         ];
     }
 }

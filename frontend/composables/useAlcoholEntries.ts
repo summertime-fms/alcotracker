@@ -165,12 +165,18 @@ export const useAlcoholEntries = () => {
   /**
    * Получить детальную статистику по дням
    */
-  const getDetailedStatistics = async (startDate?: string, endDate?: string, groupBy: string = 'total') => {
+  const getDetailedStatistics = async (
+    startDate?: string,
+    endDate?: string,
+    groupBy: string = 'total',
+    alcoholType?: string
+  ) => {
     try {
       const params = new URLSearchParams()
       if (startDate) params.append('start_date', startDate)
       if (endDate) params.append('end_date', endDate)
       if (groupBy) params.append('group_by', groupBy)
+      if (alcoholType) params.append('alcohol_type', alcoholType)
 
       const queryString = params.toString()
       const endpoint = queryString

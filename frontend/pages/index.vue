@@ -3,10 +3,7 @@
     <div class="container">
       <header class="header">
         <div class="header-content">
-          <div class="header-title">
-            <h1>🍺 AlcoTracker</h1>
-            <p class="header-subtitle">Учет потребления алкоголя</p>
-          </div>
+          <UiAppBrand logo-tag="h1" size="lg" class="header-title" />
           <UiButton @click="handleLogout" variant="outline" size="sm" :loading="isLoading">
             Выйти
           </UiButton>
@@ -73,6 +70,8 @@
           </div>
         </div>
       </main>
+
+      <UiFooter />
     </div>
   </div>
 </template>
@@ -149,49 +148,7 @@ watch(selectedDate, () => {
 </script>
 
 <style scoped>
-.page {
-  min-height: 100vh;
-  padding: var(--spacing-xl) 0;
-  width: 100%;
-  overflow-x: hidden; /* Предотвращает горизонтальную прокрутку */
-}
-
-.header {
-  margin-bottom: var(--spacing-2xl);
-  padding: var(--spacing-xl);
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-sm);
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.header-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.header-title h1 {
-  margin: 0;
-  font-family: var(--font-family-display);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text);
-  font-size: var(--font-size-2xl);
-  letter-spacing: -0.02em;
-}
-
-.header-subtitle {
-  margin: var(--spacing-xs) 0 0 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-normal);
-}
-
 .main-content {
-  animation: fadeIn 0.5s ease-out;
   width: 100%;
   min-width: 0;
 }
@@ -362,29 +319,6 @@ watch(selectedDate, () => {
 
 /* Мобильные устройства (320px - 767px) */
 @media (max-width: 767px) {
-  .page {
-    padding: var(--spacing-md) 0;
-  }
-
-  .header {
-    margin-bottom: var(--spacing-lg);
-    padding: var(--spacing-md);
-  }
-
-  .header-title h1 {
-    font-size: var(--font-size-xl);
-  }
-
-  .header-subtitle {
-    font-size: var(--font-size-xs);
-  }
-
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-md);
-  }
-
   .welcome-card {
     margin-bottom: var(--spacing-lg);
     padding: var(--spacing-lg);
@@ -432,23 +366,8 @@ watch(selectedDate, () => {
     padding: 0 var(--spacing-sm);
   }
 
-  .header-title h1 {
-    font-size: var(--font-size-lg);
-  }
-
   .welcome-card h2 {
     font-size: var(--font-size-lg);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 </style>
