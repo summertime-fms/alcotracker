@@ -132,6 +132,18 @@ docker image prune -a -f --filter "until=720h"
 
 ## Troubleshooting
 
+**MySQL unhealthy / dependency failed** — частая причина: битый volume после неудачного первого старта. На сервере:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod down
+docker volume rm alcotracker_db_data   # удалит данные БД!
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
+
+Проверь логи: `docker logs mysql_db`
+
+Пароли в `.env.prod` — без символов `$` и `#` (ломают docker env). Одинаковый `DB_PASSWORD` должен быть в `.env.prod` и `backend/.env`.
+
 **502 Bad Gateway** — контейнер упал из-за нехватки RAM:
 ```bash
 docker stats

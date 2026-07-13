@@ -23,7 +23,6 @@ services:
   db:
     image: mysql:8.0
     container_name: mysql_db
-    command: --defaults-file=/etc/mysql/conf.d/custom.cnf
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_DATABASE:-alcotracker}
@@ -36,8 +35,8 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      retries: 10
+      start_period: 60s
     restart: unless-stopped
     mem_limit: 512m
 
