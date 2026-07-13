@@ -5,6 +5,16 @@ export default defineNuxtConfig({
 
   app: {
     head: {
+      title: 'AlcoTracker — учёт потребления алкоголя и аналитика',
+      htmlAttrs: {
+        lang: 'ru',
+      },
+      meta: [
+        {
+          name: 'description',
+          content: 'AlcoTracker помогает отслеживать количество выпитого алкоголя, вести дневник записей и анализировать привычки: графики, тренды, расчёт чистого спирта и статистика по дням недели.',
+        },
+      ],
       link: [
         {
           rel: 'preconnect',

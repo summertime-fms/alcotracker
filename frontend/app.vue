@@ -5,52 +5,9 @@
       <div class="app-bg__orb app-bg__orb--2" />
       <div class="app-bg__orb app-bg__orb--3" />
     </div>
-    <NuxtPage v-show="showPage" :key="route.fullPath" />
-    <div v-if="showAuthLoader" class="auth-loading auth-loading--overlay">
-      <div class="auth-loading__spinner" />
-    </div>
+    <NuxtPage />
   </div>
 </template>
-
-<script setup lang="ts">
-const AUTH_PAGES = ['/login', '/register', '/forgot-password', '/reset-password']
-
-const route = useRoute()
-const { authChecked, isAuthenticated } = useAuth()
-
-const requiresAuth = computed(() => {
-  const middleware = route.meta.middleware
-  return middleware === 'auth' || (Array.isArray(middleware) && middleware.includes('auth'))
-})
-
-const isGuestRoute = computed(() => AUTH_PAGES.includes(route.path))
-
-// Лоадер только пока идёт первичная проверка сессии на защищённых страницах
-const showAuthLoader = computed(() => {
-  if (isGuestRoute.value || !requiresAuth.value || !import.meta.client) {
-    return false
-  }
-
-  return !authChecked.value
-})
-
-// Гостевые страницы — всегда; защищённые — после проверки сессии и при наличии пользователя
-const showPage = computed(() => {
-  if (isGuestRoute.value || !requiresAuth.value) {
-    return true
-  }
-
-  if (!import.meta.client) {
-    return false
-  }
-
-  if (!authChecked.value) {
-    return false
-  }
-
-  return isAuthenticated.value
-})
-</script>
 
 <style>
 @import './assets/css/variables.css';

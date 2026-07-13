@@ -8,6 +8,10 @@
       <span class="nav-icon">📊</span>
       <span class="nav-text">Статистика</span>
     </NuxtLink>
+    <NuxtLink to="/about" class="nav-link" :class="{ active: isActive('/about') }">
+      <span class="nav-icon">ℹ️</span>
+      <span class="nav-text">О проекте</span>
+    </NuxtLink>
   </nav>
 </template>
 
