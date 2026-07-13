@@ -1,15 +1,11 @@
 <template>
-  <div class="auth-page">
-    <div class="auth-container">
-      <AuthBrand />
-      <AuthResetPasswordForm />
-    </div>
-  </div>
+  <AuthBrand />
+  <AuthResetPasswordForm />
 </template>
 
 <script setup lang="ts">
 definePageMeta({
   middleware: 'guest',
-  layout: false,
+  layout: 'auth',
 })
 </script>

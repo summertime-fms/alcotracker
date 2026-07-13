@@ -5,6 +5,8 @@
       <div class="app-bg__orb app-bg__orb--2" />
       <div class="app-bg__orb app-bg__orb--3" />
     </div>
-    <NuxtPage />
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
   </div>
 </template>
